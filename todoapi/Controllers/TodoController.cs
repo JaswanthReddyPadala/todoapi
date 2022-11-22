@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using todoapi.Data;
 using todoapi.Models;
+using todoapi.Models.Enums;
 
 namespace todoapi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/todo")]
     public class TodoController : Controller
     {
         private readonly TodoListDbContext dbContext;
@@ -28,7 +29,7 @@ namespace todoapi.Controllers
             {
                 Id = Guid.NewGuid(),
                 Description = addTodoRequest.Description,
-                Status = addTodoRequest.Status,
+                Status = StatusType.Pending,
             };
 
             await dbContext.Todos.AddAsync(todo);
@@ -38,7 +39,36 @@ namespace todoapi.Controllers
 
         }
 
+        [HttpPut]
+        [Route("{id:guid}")]
+        public async Task<IActionResult> UpdateTodo([FromRoute] Guid id)
+        {
+            var todo = await dbContext.Todos.FindAsync(id);
+            if (todo != null)
+            {
+                todo.Status = todo.Status == StatusType.Completed ? StatusType.Pending : StatusType.Completed;
+                
+                await dbContext.SaveChangesAsync();
+                return Ok(todo);
+
+            }
+            return NotFound();
+        }
+
         [HttpDelete]
+        [Route("{id:guid}")]
+        public async Task<IActionResult> DeleteTodo([FromRoute] Guid id)
+        {
+            var todo = await dbContext.Todos.FindAsync(id);
+            if (todo != null)
+            {
+                dbContext.Todos.Remove(todo);
+                await dbContext.SaveChangesAsync();
+                return Ok(todo);
+            }
+
+            return NotFound();
+        }
 
         }
     }
